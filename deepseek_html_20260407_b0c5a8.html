@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🎬 FLIPBOOK · Dragón Primordial · Creador de Animaciones</title>
+<meta name="description" content="Crea tu propio flipbook animado estilo folioscopio. Dibuja frame por frame y comparte tu animación. By Dragón Primordial.">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  body {
+    background: #0a0508;
+    color: #e8d5b0;
+    font-family: 'Cinzel', serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  /* HEADER */
+  .header {
+    background: rgba(5,3,5,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,80,0,0.3);
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.75rem;
+    background: linear-gradient(90deg, #ff8c00, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .social-icons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .social-icons a {
+    color: #907060;
+    text-decoration: none;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(255,140,0,0.2);
+    transition: all 0.2s;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+  .social-icons a:hover { color: #ff8c00; border-color: #ff8c00; background: rgba(255,100,0,0.1); }
+
+  /* MAIN CONTAINER */
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* TÍTULO */
+  .title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .title h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    background: linear-gradient(135deg, #ffd700, #ff4d00, #9b00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .title p {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: #a08060;
+    font-size: 0.85rem;
+  }
+
+  /* FLIPBOOK ZONE */
+  .flipbook-area {
+    background: linear-gradient(145deg, rgba(20,8,5,0.85), rgba(10,3,15,0.85));
+    border: 2px solid rgba(255,140,0,0.2);
+    border-radius: 0;
+    clip-path: polygon(16px 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Canvas de dibujo */
+  .canvas-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+  }
+  canvas {
+    background: #faf8e8;
+    box-shadow: 0 0 0 3px #2a1a0a, 0 10px 30px rgba(0,0,0,0.5);
+    cursor: crosshair;
+    width: 100%;
+    height: auto;
+    max-width: 500px;
+    aspect-ratio: 4 / 3;
+  }
+  #drawCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff8e8;
+  }
+
+  /* CONTROLES DE DIBUJO */
+  .draw-tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .tool-btn {
+    background: rgba(5,3,5,0.8);
+    border: 1px solid rgba(255,140,0,0.3);
+    color: #ff8c00;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+    transition: all 0.2s;
+  }
+  .tool-btn:hover { background: rgba(255,100,0,0.2); border-color: #ffd700; }
+  .tool-btn.active { background: rgba(255,100,0,0.3); border-color: #ffd700; color: #ffd700; }
+  .color-picker { width: 45px; height: 40px; border: 2px solid #ff8c00; background: #000; cursor: pointer; }
+  .range-slider { width: 120px; cursor: pointer; background: #2a1a0a; accent-color: #ff8c00; }
+
+  /* FRAMES */
+  .frames-bar {
+    background: rgba(0,0,0,0.6);
+    padding: 1rem;
+    border-radius: 0;
+    margin-top: 1rem;
+  }
+  .frames-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+  }
+  .frames-list {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    scrollbar-width: thin;
+  }
+  .frame-thumb {
+    width: 70px;
+    height: 55px;
+    background: #fff8e8;
+    border: 2px solid rgba(255,140,0,0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+  .frame-thumb.active { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.5); transform: scale(1.02); }
+  .frame-thumb:hover { border-color: #ff8c00; }
+
+  /* CONTROLES ANIMACIÓN */
+  .animation-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .anim-btn {
+    background: linear-gradient(135deg, #ff4500, #ff8c00);
+    border: none;
+    color: white;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    transition: all 0.2s;
+  }
+  .anim-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  .fps-control { display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.5); padding: 0.3rem 0.8rem; }
+  .fps-control label { font-size: 0.65rem; }
+
+  /* DONACIÓN */
+  .donation-box {
+    background: linear-gradient(135deg, rgba(139,0,0,0.2), rgba(74,0,128,0.2));
+    border: 2px solid rgba(255,215,0,0.3);
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    padding: 1.2rem;
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+  .donation-box h3 { color: #ffd700; font-size: 0.9rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+  .bank-number {
+    background: rgba(0,0,0,0.7);
+    padding: 0.6rem;
+    font-family: monospace;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    color: #ffd700;
+    word-break: break-all;
+    margin: 0.5rem 0;
+  }
+  .copy-btn {
+    background: rgba(255,140,0,0.2);
+    border: 1px solid #ff8c00;
+    color: #ffd700;
+    padding: 0.4rem 1rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    cursor: pointer;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+  .copy-btn:hover { background: rgba(255,140,0,0.4); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.6rem;
+    color: #5a4030;
+    border-top: 1px solid rgba(255,80,0,0.1);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a0a05;
+    border: 1px solid #ff8c00;
+    color: #ffd700;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.7rem;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+<div class="toast" id="toastMsg">📋 Copiado!</div>
+
+<header class="header">
+  <span class="logo">🐉 DRAGÓN PRIMORDIAL · FLIPBOOK</span>
+  <div class="social-icons">
+    <a href="https://www.tiktok.com/@dragonprimordial" target="_blank">🎵 TikTok</a>
+    <a href="https://x.com/dragonprimordia" target="_blank">𝕏</a>
+    <a href="https://www.instagram.com/dragonprimordial/" target="_blank">📸 IG</a>
+    <a href="https://discord.com/channels/1489401096530301128/1489401098518139032" target="_blank">💬 DC</a>
+    <a href="https://www.youtube.com/@Drag%C3%B3nPrimordial" target="_blank">▶️ YT</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="title">
+    <h1>🎬 FLIPBOOK ANIMADO</h1>
+    <p>Dibuja frame por frame · Crea tu propia animación estilo folioscopio</p>
+  </div>
+
+  <div class="flipbook-area">
+    <!-- CANVAS DE DIBUJO -->
+    <div class="canvas-container">
+      <canvas id="drawCanvas" width="600" height="450" style="width:100%; height:auto; max-width:600px; aspect-ratio:600/450"></canvas>
+    </div>
+
+    <!-- HERRAMIENTAS DE DIBUJO -->
+    <div class="draw-tools">
+      <button class="tool-btn" id="brushBtn" data-tool="brush">✏️ PINCEL</button>
+      <button class="tool-btn" id="eraserBtn" data-tool="eraser">🧽 BORRADOR</button>
+      <button class="tool-btn" id="clearFrameBtn">🗑 LIMPIAR FRAME</button>
+      <input type="color" id="colorPicker" class="color-picker" value="#000000">
+      <input type="range" id="brushSize" class="range-slider" min="2" max="30" value="5">
+      <span style="font-size:0.6rem;">Tamaño</span>
+    </div>
+
+    <!-- FRAMES (miniatura) -->
+    <div class="frames-bar">
+      <div class="frames-title">
+        <span>📸 FRAMES (folios)</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="tool-btn" id="addFrameBtn" style="font-size:0.55rem;">➕ NUEVO FRAME</button>
+          <button class="tool-btn" id="duplicateFrameBtn" style="font-size:0.55rem;">📋 DUPLICAR</button>
+          <button class="tool-btn" id="deleteFrameBtn" style="font-size:0.55rem;">❌ ELIMINAR</button>
+        </div>
+      </div>
+      <div class="frames-list" id="framesList"></div>
+    </div>
+
+    <!-- CONTROLES DE ANIMACIÓN -->
+    <div class="animation-controls">
+      <button class="anim-btn" id="playBtn">▶ REPRODUCIR</button>
+      <button class="anim-btn" id="stopBtn">⏹ DETENER</button>
+      <div class="fps-control">
+        <label>⚡ VELOCIDAD</label>
+        <input type="range" id="fpsSlider" min="4" max="24" value="12" style="width:100px;">
+        <span id="fpsValue" style="font-size:0.65rem;">12 fps</span>
+      </div>
+      <button class="tool-btn" id="exportGifBtn" style="background:#4a0080;">🎬 EXPORTAR GIF</button>
+    </div>
+  </div>
+
+  <!-- DONACIONES BANCO PICHINCHA -->
+  <div class="donation-box">
+    <h3>❤️ APOYA AL DRAGÓN PRIMORDIAL</h3>
+    <p style="font-size:0.7rem; margin-bottom:0.3rem;">Banco Pichincha · Ecuador</p>
+    <div class="bank-number" id="bankAccount">2215350861</div>
+    <button class="copy-btn" onclick="copyBankAccount()">📋 COPIAR NÚMERO DE CUENTA</button>
+    <p style="font-size:0.6rem; margin-top:0.5rem; color:#a08060;">Cuenta de ahorro transaccional · ¡Gracias por apoyar el arte!</p>
+  </div>
+</div>
+
+<footer>
+  🔥 <strong>Dragón Primordial</strong> · Creador de Flipbook · Dibuja, anima y comparte tu arte 🔥<br>
+  Sígueme en TikTok: <strong style="color:#ff8c00;">@dragonprimordial</strong> · Arte por <strong>@geni2012_</strong>
+</footer>
+
+<script>
+  // ==================== FLIPBOOK / FOLIOSCOPIO ====================
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Configuración del flipbook
+  let frames = [];         // Array de ImageData
+  let currentFrame = 0;
+  let drawing = false;
+  let currentTool = 'brush';
+  let brushColor = '#000000';
+  let brushSize = 5;
+  
+  // Animación
+  let animationInterval = null;
+  let isPlaying = false;
+  let fps = 12;
+  
+  // Inicializar canvas
+  function initCanvas() {
+    canvas.width = 600;
+    canvas.height = 450;
+    ctx.fillStyle = '#fff8e8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000';
+  }
+  
+  // Guardar frame actual como ImageData
+  function saveCurrentFrame() {
+    if (frames.length > 0 && currentFrame < frames.length) {
+      frames[currentFrame] = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+  }
+  
+  // Cargar un frame específico
+  function loadFrame(index) {
+    if (frames[index]) {
+      ctx.putImageData(frames[index], 0, 0);
+    } else {
+      ctx.fillStyle = '#fff8e8';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    currentFrame = index;
+    updateFramesThumbnails();
+    highlightCurrentFrame();
+  }
+  
+  // Agregar nuevo frame (vacío)
+  function addNewFrame() {
+    saveCurrentFrame();
+    // Crear frame vacío (blanco)
+    const emptyCanvas = document.createElement('canvas');
+    emptyCanvas.width = canvas.width;
+    emptyCanvas.height = canvas.height;
+    const emptyCtx = emptyCanvas.getContext('2d');
+    emptyCtx.fillStyle = '#fff8e8';
+    emptyCtx.fillRect(0, 0, canvas.width, canvas.height);
+    frames.push(emptyCtx.getImageData(0, 0, canvas.width, canvas.height));
+    currentFrame = frames.length - 1;
+    loadFrame(currentFrame);
+  }
+  
+  // Duplicar frame actual
+  function duplicateFrame() {
+    saveCurrentFrame();
+    const duplicated = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    frames.splice(currentFrame + 1, 0, duplicated);
+    currentFrame++;
+    loadFrame(currentFrame);
+  }
+  
+  // Eliminar frame actual
+  function deleteCurrentFrame() {
+    if (frames.length <= 1) {
+      showToastMsg('⚠️ Debes tener al menos 1 frame');
+      return;
+    }
+    frames.splice(currentFrame, 1);
+    if (currentFrame >= frames.length) currentFrame = frames.length - 1;
+    loadFrame(currentFrame);
+  }
+  
+  // Limpiar frame actual (dejar en blanco)
+  function clearCurrentFrame() {
+    ctx.fillStyle = '#fff8e8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    saveCurrentFrame();
+    updateFramesThumbnails();
+  }
+  
+  // Actualizar miniaturas de frames
+  function updateFramesThumbnails() {
+    const container = document.getElementById('framesList');
+    container.innerHTML = '';
+    frames.forEach((frameData, idx) => {
+      const thumbCanvas = document.createElement('canvas');
+      thumbCanvas.width = 80;
+      thumbCanvas.height = 60;
+      const thumbCtx = thumbCanvas.getContext('2d');
+      const imgData = new ImageData(
+        new Uint8ClampedArray(frameData.data),
+        frameData.width,
+        frameData.height
+      );
+      thumbCtx.putImageData(imgData, 0, 0);
+      const thumb = document.createElement('img');
+      thumb.src = thumbCanvas.toDataURL();
+      thumb.className = 'frame-thumb';
+      if (idx === currentFrame) thumb.classList.add('active');
+      thumb.addEventListener('click', () => {
+        saveCurrentFrame();
+        loadFrame(idx);
+      });
+      container.appendChild(thumb);
+    });
+  }
+  
+  function highlightCurrentFrame() {
+    const thumbs = document.querySelectorAll('.frame-thumb');
+    thumbs.forEach((thumb, idx) => {
+      if (idx === currentFrame) thumb.classList.add('active');
+      else thumb.classList.remove('active');
+    });
+  }
+  
+  // ========== DIBUJO EN EL CANVAS ==========
+  function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    let clientX, clientY;
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+      e.preventDefault();
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    let x = (clientX - rect.left) * scaleX;
+    let y = (clientY - rect.top) * scaleY;
+    x = Math.min(Math.max(0, x), canvas.width);
+    y = Math.min(Math.max(0, y), canvas.height);
+    return { x, y };
+  }
+  
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const { x, y } = getCanvasCoords(e);
+    ctx.save();
+    ctx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
+    if (currentTool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, brushSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.fillStyle = brushColor;
+      ctx.beginPath();
+      ctx.arc(x, y, brushSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  
+  function startDraw(e) {
+    drawing = true;
+    draw(e);
+  }
+  function endDraw() {
+    drawing = false;
+    saveCurrentFrame();
+    updateFramesThumbnails();
+  }
+  
+  // Eventos
+  canvas.addEventListener('mousedown', startDraw);
+  window.addEventListener('mousemove', (e) => { if (drawing) draw(e); });
+  window.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('touchstart', startDraw);
+  canvas.addEventListener('touchmove', draw);
+  canvas.addEventListener('touchend', endDraw);
+  
+  // ========== ANIMACIÓN ==========
+  function playAnimation() {
+    if (animationInterval) clearInterval(animationInterval);
+    isPlaying = true;
+    let frameIdx = 0;
+    animationInterval = setInterval(() => {
+      if (frames.length === 0) return;
+      loadFrame(frameIdx);
+      frameIdx = (frameIdx + 1) % frames.length;
+    }, 1000 / fps);
+  }
+  
+  function stopAnimation() {
+    if (animationInterval) {
+      clearInterval(animationInterval);
+      animationInterval = null;
+    }
+    isPlaying = false;
+    loadFrame(0);
+  }
+  
+  // Exportar como GIF (usando GIF.js embebido)
+  function exportAsGif() {
+    showToastMsg('🎬 Generando GIF... puede tomar unos segundos');
+    // Usamos la librería GIF.js desde CDN (se carga dinámicamente)
+    if (typeof GIF === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+      script.onload = () => createGif();
+      document.head.appendChild(script);
+    } else {
+      createGif();
+    }
+  }
+  
+  function createGif() {
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: canvas.width,
+      height: canvas.height,
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+    });
+    
+    frames.forEach(frameData => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(frameData, 0, 0);
+      gif.addFrame(tempCanvas, { delay: 1000 / fps });
+    });
+    
+    gif.on('finished', (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `flipbook_dragon_${Date.now()}.gif`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToastMsg('✅ GIF descargado!');
+    });
+    gif.render();
+  }
+  
+  // ========== UTILIDADES ==========
+  function showToastMsg(msg) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  
+  function copyBankAccount() {
+    const account = document.getElementById('bankAccount').innerText;
+    navigator.clipboard.writeText(account);
+    showToastMsg('📋 Cuenta copiada: ' + account);
+  }
+  
+  // ========== INICIALIZAR ==========
+  function init() {
+    initCanvas();
+    // Frame inicial
+    const initialFrame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    frames.push(initialFrame);
+    currentFrame = 0;
+    updateFramesThumbnails();
+    
+    // Eventos botones
+    document.getElementById('brushBtn').addEventListener('click', () => { currentTool = 'brush'; document.getElementById('brushBtn').classList.add('active'); document.getElementById('eraserBtn').classList.remove('active'); });
+    document.getElementById('eraserBtn').addEventListener('click', () => { currentTool = 'eraser'; document.getElementById('eraserBtn').classList.add('active'); document.getElementById('brushBtn').classList.remove('active'); });
+    document.getElementById('clearFrameBtn').addEventListener('click', clearCurrentFrame);
+    document.getElementById('addFrameBtn').addEventListener('click', addNewFrame);
+    document.getElementById('duplicateFrameBtn').addEventListener('click', duplicateFrame);
+    document.getElementById('deleteFrameBtn').addEventListener('click', deleteCurrentFrame);
+    document.getElementById('playBtn').addEventListener('click', playAnimation);
+    document.getElementById('stopBtn').addEventListener('click', stopAnimation);
+    document.getElementById('exportGifBtn').addEventListener('click', exportAsGif);
+    document.getElementById('colorPicker').addEventListener('change', (e) => { brushColor = e.target.value; });
+    document.getElementById('brushSize').addEventListener('input', (e) => { brushSize = parseInt(e.target.value); });
+    document.getElementById('fpsSlider').addEventListener('input', (e) => { fps = parseInt(e.target.value); document.getElementById('fpsValue').innerText = fps + ' fps'; if (isPlaying) { playAnimation(); } });
+    
+    document.getElementById('brushBtn').classList.add('active');
+  }
+  
+  init();
+  
+  // ========== PARTÍCULAS ==========
+  const partCanvas = document.getElementById('particles');
+  const partCtx = partCanvas.getContext('2d');
+  let W = partCanvas.width = window.innerWidth;
+  let H = partCanvas.height = window.innerHeight;
+  window.addEventListener('resize', () => { W = partCanvas.width = window.innerWidth; H = partCanvas.height = window.innerHeight; });
+  const embers = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: H + Math.random() * 100, size: Math.random() * 2 + 0.5, speed: Math.random() * 0.6 + 0.2, drift: (Math.random() - 0.5) * 0.3, alpha: Math.random() * 0.5 + 0.1, hue: Math.random() * 40 + 10 }));
+  function drawParticles() {
+    partCtx.clearRect(0, 0, W, H);
+    embers.forEach(e => { e.y -= e.speed; e.x += e.drift; e.alpha += (Math.random() - 0.5) * 0.02; e.alpha = Math.max(0.05, Math.min(0.6, e.alpha)); if (e.y < -10) { e.y = H + 10; e.x = Math.random() * W; } partCtx.beginPath(); partCtx.arc(e.x, e.y, e.size, 0, Math.PI * 2); partCtx.fillStyle = `hsla(${e.hue}, 100%, 60%, ${e.alpha})`; partCtx.fill(); });
+    requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+</script>
+</body>
+</html>
